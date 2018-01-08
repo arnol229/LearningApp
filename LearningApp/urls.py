@@ -15,7 +15,16 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from django.contrib.auth.views import login, logout
+
+from courses.views import CourseAPIView, index
+from students.views import student
+
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^courses/$', CourseAPIView.as_view()),
+    url(r'^courses/(?P<course_id>[0-9]+)/$', CourseAPIView.as_view()),
+    url(r'^student/$', student),
+    url(r'^$', index),
 ]

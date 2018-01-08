@@ -1,0 +1,192 @@
+<html>
+    <head>
+        <style>
+        table, th, td {
+    border: 1px solid black;
+}
+    </style>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+        <script>
+            $.fn.serializeObject = function () {
+                var o = {};
+                var a = this.serializeArray();
+                $.each(a, function () {
+                    if (o[this.name] !== undefined) {
+                        if (!o[this.name].push) {
+                            o[this.name] = [o[this.name]];
+                        }
+                        o[this.name].push(this.value || '');
+                    } else {
+                        o[this.name] = this.value || '';
+                    }
+                });
+                return o;
+            };
+            var add_course_row = function(course_data, target) {
+                let new_row = $('<tr>').attr({class: course_data.course_id});
+                console.log(course_data);
+                $.each(course_data, function(key, val) {
+                    new_row.append(
+                        $('<td>').text(val).attr({class: key})
+                    )
+                });
+                new_row.append(
+                    $('<button>').attr({
+                        class: 'btn btn-primary',
+                        'data-toggle': "modal",
+                        'data-target': '#courseModal'
+                    }).text('Edit').on('click', function(e) {
+                        fill_form($(this).parent());
+                    })
+                );
+                $(target).append(new_row);
+            },
+            fill_form = function($row) {
+                console.log('fill form');
+                $.each($('.courseForm input'), function(index, input) {
+                    input.value = $row.find('.' + input.name).text();
+                });
+            },
+            clean_form = function() {
+                console.log("cleaning form");
+                $.each($('.courseForm input'), function(index, input) {
+                    if (!(input.name == "csrfmiddlewaretoken")) {
+                        input.value = '';
+                    }
+                });
+            };
+
+            $(document).ready(function() {
+                var courses_populated = false;
+                // User Name submission and course population
+                $('.UserForm').on('submit', function(e) {
+                    e.preventDefault();
+                    var user_name = $('input[name="user_name"]').val();
+                    if (!user_name) {
+                        alert('User Name is required');
+                        return false
+                    }
+                    $.ajax('/student/?' + $.param({name: user_name})).always(function(resp, status) {
+                        console.log('status', status);
+                        console.log('response status', resp.status);
+                        if (resp.status == 404) {
+                            return
+                        }
+                        for (x in resp) {
+                            console.log(resp[x]);
+                        }
+                        var headers = Object.keys(resp_data[0]);
+                            $.each(headers, function(key, val) {
+                                $('.student_headers').append(
+                                    $('<th>').text(val))
+                            });
+                            $.each(resp_data, function(index, course_data) {
+                                add_course_row(course_data, '.student_table');
+                            });
+                            $('.student_section').css('visibility','visible');
+                    });
+                    if (!courses_populated) {
+                        $.ajax('/courses/').done(function(resp_data) {
+                            var headers = Object.keys(resp_data[0]);
+                            $.each(headers, function(key, val) {
+                                $('.table_headers').append(
+                                    $('<th>').text(val))
+                            });
+                            $.each(resp_data, function(index, course_data) {
+                                add_course_row(course_data, '.course_table');
+                            });
+                            $('.course_section').css('visibility','visible');
+                            courses_populated = true;
+                        });
+                    }
+                });
+                $('.courseForm').on('submit', function(e) {
+                    e.preventDefault();
+                    let payload = $(this).serializeObject();
+                    request_data = {
+                        url: payload.course_id ? '/courses/' + payload.course_id + '/' : '/courses/',
+                        method: payload.course_id ? "PUT" : "POST",
+                        data: payload,
+                    }
+                    $.ajax(request_data).done(function(course_data) {
+                        $('#courseModal').modal('hide');
+                        if (request_data.method == 'POST') {
+                            add_course_row(course_data, '.course_table');
+                        } else {
+                            let $row = $('tr.'+course_data.course_id);
+                            console.log("got row: ", $row);
+                            console.log(course_data)
+                            $.each($row.find('td'), function(i, $td) {
+                                console.log($td, course_data[$td.className])
+                                $td.innerHTML = course_data[$td.className];
+                            });
+                        }
+                    });
+                });
+            });
+        </script>
+    </head>
+    <div class="container">
+        <span>Walmart Employee Resource Center</span>
+        <div>
+            <form class="UserForm">
+                <label for="name">Full Name:</label>
+                <input name="user_name">
+                <button type='submit'>Retrieve Classes
+            </form>
+        </div>
+        <div class="col-md-12">
+            <div class="course_section col-md-6" style="visibility: hidden;">
+                <span>Course List</span>
+                <table class=course_table>
+                    <tr class="table_headers">
+                    </tr>
+                </table>
+                <div class="options">
+                    <button type="button" class="addCourse" onclick="clean_form();" data-toggle="modal" data-target="#courseModal">Add Class</button>
+                </div>
+            </div>
+            <div class="student_section col-md-6" style="visibility: hidden;">
+                <table class=student_table>
+                    <tr class="student_headers">
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="courseModal" tabindex="-1" role="dialog" aria-labelledby="courseModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="courseModalLabel">Edit Course</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form class="courseForm">
+          <div class="form-group">
+            <label for="name" class="form-control-label">Course Name:</label>
+            <input type="text" class="form-control" id="name" name="name">
+          </div>
+          <div class="form-group">
+            <label for="length" class="form-control-label">Course length:</label>
+            <input type="number" class="form-control" id="length" name="length">
+          </div>
+          <div class="form-group">
+            <label for="subject" class="form-control-label">Course subject:</label>
+            <input type="text" class="form-control" id="subject" name="subject">
+          </div>
+          <input type='hidden' name='course_id'>
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">Save Course</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</html>

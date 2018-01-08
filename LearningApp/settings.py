@@ -26,7 +26,7 @@ SECRET_KEY = '%4v9j82yc80)&v@*8%&#w+!oynl3x-=wp3$lnrrjlzjl-z^o*6'
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+LOGIN_REDIRECT_URL = '/index/'
 
 # Application definition
 
@@ -37,6 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'bootstrap3',
+
+    'courses',
+    'students',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -55,7 +60,7 @@ ROOT_URLCONF = 'LearningApp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

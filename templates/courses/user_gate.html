@@ -1,0 +1,14 @@
+<script>
+    $(document).ready(function() {
+        $('.UserForm').on('submit', function(e) {
+            e.preventDefault();
+            var user_name = $('input[name="user_name"]').val();
+            if (!user_name) {
+                alert('User Name is required');
+            }
+            else {
+                window.href = '/course_view/?user=' + user_name;
+            }
+        });
+    });
+</script>
